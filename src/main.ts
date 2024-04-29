@@ -20,7 +20,7 @@ app.connectMicroservice<MicroserviceOptions>({
   options: {
     servers: envs.natsServers,
   }
-});
+}, {inheritAppConfig: true});
 
   await app.startAllMicroservices();
   await app.listen(envs.port);
