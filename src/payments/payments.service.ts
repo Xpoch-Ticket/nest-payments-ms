@@ -1,12 +1,20 @@
-import { Injectable } from '@nestjs/common';
-import { envs } from 'src/config';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { NATS_SERVICE, envs } from 'src/config';
 import Stripe from 'stripe';
 import { PaymentSessionDto } from './dto/payment-session.dto';
 import { Request, Response } from 'express';
+import { ClientProxy } from '@nestjs/microservices';
 
 @Injectable()
 export class PaymentsService {
   private readonly stripe = new Stripe(envs.stripeSecret);
+  private readonly logger = new Logger('PaymentsService');
+
+  constructor(
+    @Inject(NATS_SERVICE) private readonly client:ClientProxy
+  ){
+
+  }
 
   async createPaymentSession(paymentSessionDto: PaymentSessionDto) {
     const { currency, items, orderId } = paymentSessionDto;
@@ -36,7 +44,12 @@ export class PaymentsService {
       cancel_url: envs.stripeCancelURL,
     });
 
-    return session;
+    //return session;
+    return {
+      cancelUrl: session.cancel_url,
+      successUrl: session.success_url,
+      url: session.url,
+    }
   }
 
   /* Para pruebas se utiliza:
@@ -62,7 +75,13 @@ https://dashboard.hookdeck.com/connections
       case 'charge.succeeded':
         //TODO: Llamar a nuestro microservicio
         const chargeSucceded = event.data.object;
-        console.log('charge succeeded', chargeSucceded.metadata);
+        const payload = {
+          stripePaymentId: chargeSucceded.id,
+          orderId: chargeSucceded.metadata.orderId,
+          receiptUrl: chargeSucceded.receipt_url,
+        } 
+        this.logger.log(`Payment was successful for order ${payload.orderId}`);
+        this.client.emit('payment.succeeded', payload);
         break;
       default:
         console.log(`Unhandled event type ${event.type}`);
