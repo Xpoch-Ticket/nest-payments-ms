@@ -1,0 +1,18 @@
+steps:
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "build",
+        "-t",
+        "southamerica-east1-docker.pkg.dev/ultra-glyph-422920-g7/ticket-microservices/nest-payments-ms",
+        "-f",
+        "dockerfile.prod",
+        "--platform=linux/amd64",
+        ".",
+      ]
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "push",
+        "southamerica-east1-docker.pkg.dev/ultra-glyph-422920-g7/ticket-microservices/nest-payments-ms",
+      ]
